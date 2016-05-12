@@ -50,8 +50,8 @@ class Ruedolph(pilasengine.actores.Actor):
         return len(self.sensor_pies.figuras_en_contacto) > 0
 
 cinta1 = pilas.fisica.Rectangulo(plataforma=1,x=-345,y=-85,alto=35,ancho=870,amortiguacion=0,restitucion=0)
-fondo = pilas.fondos.Fondo(imagen=IMG_DIR+'/N1E1.png')
-fondo.escala = 0.46
+fondo = pilas.fondos.Fondo(imagen=IMG_DIR+'/disociosp.png')
+fondo.escala = 1.593
 
 pilas.actores.vincular(Ruedolph)
 ruedolph = Ruedolph(pilas)
