@@ -1,11 +1,11 @@
 # coding: utf-8
 import pilasengine
 from settings import IMG_DIR
-
+from circulo_personalizado import Mi_Circulo
 # Variable global
 en_colision = False
-
 pilas = pilasengine.iniciar()
+
 
 class Ruedolph(pilasengine.actores.Actor):
 
@@ -13,11 +13,14 @@ class Ruedolph(pilasengine.actores.Actor):
         self.imagen = IMG_DIR + "/ruedolph_small.png"
         self.radio_de_colision = 20
         self.figura = pilas.fisica.Circulo(self.x, self.y, 50,
-            friccion=0, restitucion=0,dinamica=1)
+            friccion=0, restitucion=0, dinamica=1)
+        self.figura_encaje = pilas.fisica.Circulo(self.x, self.y, 20,
+            friccion=0, restitucion=0, dinamica=0, sensor=1)
         self.imantado = False
         self.figura.sin_rotacion = True
         self.figura.escala_de_gravedad = 3
-        self.sensor_pies = pilas.fisica.Rectangulo(self.x, self.y, 30, 5, sensor=True, dinamica=False,restitucion=0,amortiguacion=0)
+        self.sensor_pies = pilas.fisica.Rectangulo(self.x, self.y, 30, 5,
+            sensor=True, dinamica=False, restitucion=0, amortiguacion=0)
 
     def actualizar(self):
         velocidad = 10
@@ -25,7 +28,9 @@ class Ruedolph(pilasengine.actores.Actor):
         pilas.fisica.gravedad_y = -10
         self.x = self.figura.x
         self.y = self.figura.y
-        
+        self.figura_encaje.x = self.x
+        self.figura_encaje.y = self.y
+
         if self.pilas.control.derecha:
             self.figura.velocidad_x = velocidad
             self.rotacion -= velocidad
@@ -38,9 +43,10 @@ class Ruedolph(pilasengine.actores.Actor):
             self.figura.velocidad_x = 0
 
         if self.pilas.control.boton:
-            pilas.fisica.gravedad_y = 0
-            self.figura.velocidad_x = 0
-            self.figura.velocidad_y = 0
+            if any(isinstance(x, Mi_Circulo) for x in self.figura_encaje.figuras_en_contacto):
+                pilas.fisica.gravedad_y = 0
+                self.figura.velocidad_x = 0
+                self.figura.velocidad_y = 0
 
         if self.esta_pisando_el_suelo():
             if self.pilas.control.arriba and not int(self.figura.velocidad_y) and not pilas.control.boton:
@@ -60,7 +66,10 @@ class Pendorcho(pilasengine.actores.Actor):
         self.x = x
         self.escala = 0.1
         self.radio_de_colision = 20
-        self.piso = pilas.fisica.Rectangulo(x, y - 50, 30, 5, sensor=True, dinamica=False,restitucion=0,amortiguacion=0)
+        self.mc = Mi_Circulo(fisica=pilas.fisica, pilas=pilas, x=x, y=y,
+            radio=self.radio_de_colision, sensor=True, dinamica=False)
+        self.piso = pilas.fisica.Rectangulo(x, y - 50, 30, 5,
+                sensor=True, dinamica=False, restitucion=0, amortiguacion=0)
 
 pilas.actores.vincular(Pendorcho)
 pilas.actores.vincular(Ruedolph)
@@ -75,6 +84,8 @@ pendorchos.agregar(t1)
 pendorchos.agregar(t2)
 pendorchos.agregar(t3)
 pendorchos.agregar(t4)
+
+
 def verificar(evento):
     global en_colision
     if en_colision and pilas.control.boton:
@@ -89,7 +100,8 @@ def verificar(evento):
         r.figura.y = aux.y
         pilas.fisica.gravedad_y = 0
         r.figura.velocidad_y = 0
-        
+
+
 def encajar(r, pendorchos):
     global en_colision
     en_colision = True
