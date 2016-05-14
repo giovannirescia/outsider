@@ -24,7 +24,7 @@ class Ruedolph(pilasengine.actores.Actor):
 
     def actualizar(self):
         velocidad = 10
-        salto = 125
+        salto = 120
         pilas.fisica.gravedad_y = -10
         self.x = self.figura.x
         self.y = self.figura.y
@@ -44,6 +44,8 @@ class Ruedolph(pilasengine.actores.Actor):
 
         if self.pilas.control.boton:
             if any(isinstance(x, Mi_Circulo) for x in self.figura_encaje.figuras_en_contacto):
+                global en_colision
+                en_colision = True
                 pilas.fisica.gravedad_y = 0
                 self.figura.velocidad_x = 0
                 self.figura.velocidad_y = 0
@@ -76,15 +78,16 @@ pilas.actores.vincular(Ruedolph)
 r = Ruedolph(pilas)
 t1 = Pendorcho(pilas, 0, -100)
 t2 = Pendorcho(pilas, 180, -5)
-t3 = Pendorcho(pilas, -12, 85)
+t3 = Pendorcho(pilas, -12, 90)
 t4 = Pendorcho(pilas, 165, 188)
+t5 = Pendorcho(pilas, -80, -47)
 
 pendorchos = pilas.actores.Grupo()
 pendorchos.agregar(t1)
 pendorchos.agregar(t2)
 pendorchos.agregar(t3)
 pendorchos.agregar(t4)
-
+pendorchos.agregar(t5)
 
 def verificar(evento):
     global en_colision
