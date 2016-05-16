@@ -17,6 +17,7 @@ class Ruedolph(pilasengine.actores.Actor):
         self.figura_encaje = pilas.fisica.Circulo(self.x, self.y, 20,
             friccion=0, restitucion=0, dinamica=0, sensor=1)
         self.imantado = False
+        self.se_puede_mover = True
         self.figura.sin_rotacion = True
         self.figura.escala_de_gravedad = 3
         self.sensor_pies = pilas.fisica.Rectangulo(self.x, self.y, 30, 5,
@@ -31,18 +32,18 @@ class Ruedolph(pilasengine.actores.Actor):
         self.figura_encaje.x = self.x
         self.figura_encaje.y = self.y
 
-        if self.pilas.control.derecha:
+        if self.pilas.control.derecha and self.se_puede_mover:
             self.figura.velocidad_x = velocidad
             self.rotacion -= velocidad
 
-        elif self.pilas.control.izquierda:
+        elif self.pilas.control.izquierda and self.se_puede_mover:
             self.figura.velocidad_x = -velocidad
             self.rotacion += velocidad
 
         else:
             self.figura.velocidad_x = 0
 
-        if self.pilas.control.boton:
+        if self.pilas.control.boton and self.se_puede_mover:
             if any(isinstance(x, Mi_Circulo) for x in self.figura_encaje.figuras_en_contacto):
                 global en_colision
                 en_colision = True
@@ -51,14 +52,15 @@ class Ruedolph(pilasengine.actores.Actor):
                 self.figura.velocidad_y = 0
 
         if self.esta_pisando_el_suelo():
-            if self.pilas.control.arriba and not int(self.figura.velocidad_y) and not pilas.control.boton:
+            if self.pilas.control.arriba and  not int(self.figura.velocidad_y) and not pilas.control.boton:
                 self.figura.impulsar(0, salto)
 
         self.sensor_pies.x = self.x
         self.sensor_pies.y = self.y - 53
 
     def esta_pisando_el_suelo(self):
-        return len(self.sensor_pies.figuras_en_contacto) > 0
+        return any(isinstance(x, pilasengine.fisica.rectangulo.Rectangulo) for x in self.sensor_pies.figuras_en_contacto)
+#        return len(self.sensor_pies.figuras_en_contacto) > 0
 
 
 class Pendorcho(pilasengine.actores.Actor):
@@ -67,7 +69,7 @@ class Pendorcho(pilasengine.actores.Actor):
         self.y = y
         self.x = x
         self.escala = 0.1
-        self.radio_de_colision = 20
+        self.radio_de_colision = 10
         self.mc = Mi_Circulo(fisica=pilas.fisica, pilas=pilas, x=x, y=y,
             radio=self.radio_de_colision, sensor=True, dinamica=False)
         self.piso = pilas.fisica.Rectangulo(x, y - 50, 30, 5,
@@ -76,7 +78,7 @@ class Pendorcho(pilasengine.actores.Actor):
 pilas.actores.vincular(Pendorcho)
 pilas.actores.vincular(Ruedolph)
 r = Ruedolph(pilas)
-t1 = Pendorcho(pilas, 0, -100)
+t1 = Pendorcho(pilas, 0, -110)
 t2 = Pendorcho(pilas, 180, -5)
 t3 = Pendorcho(pilas, -12, 90)
 t4 = Pendorcho(pilas, 165, 188)
