@@ -89,7 +89,13 @@ pilas.comportamientos.vincular(Mueve_y)
 pilas.comportamientos.vincular(Mueve_y_arriba)
 pilas.comportamientos.vincular(Eliminar)
 pilas.comportamientos.vincular(Escanear)
-
+def subir_diagonal(g):
+    pilas.utils.interpolar(g, 'x', 210, 3.5)
+    pilas.utils.interpolar(g, 'y', 270, 3.5)
+def generar_texto(text, x, y):
+    t = pilas.actores.Texto(text, magnitud=27,x=x,y=y)
+    t.color = 'rojo'
+    return t
 def general():
     m = generar_rueda()
     # Tubo a la cinta
