@@ -9,7 +9,7 @@ pilas = pilasengine.iniciar(ancho=1600, alto=900)
 class Ruedolph(pilasengine.actores.Actor):
 
     def iniciar(self):
-        self.imagen = IMG_DIR + "/ruedolph_small.png"
+        self.imagen = IMG_DIR + "ruedolph_small.png"
 
         self.figura = pilas.fisica.Circulo(self.x, self.y, 50,
             friccion=0, restitucion=0,dinamica=1)

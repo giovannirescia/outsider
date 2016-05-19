@@ -92,7 +92,11 @@ class Escanear(pilasengine.comportamientos.Comportamiento):
             else:
                 return True
 
-
+class ApareceTexto(pilasengine.comportamientos.Comportamiento):
+    def iniciar(self, receptor):
+        receptor.transparencia = 0
+    def actualizar(self):
+        return True        
 
 def mueve_x(g, stamina, img=''):
     g.hacer("Mueve_x", stamina, img)
@@ -103,15 +107,21 @@ def mueve_y(g, stamina):
 def mueve_y_arriba(g, stamina, rueda):
     g.hacer("Mueve_y_arriba",stamina, rueda)
 
-def eliminar(g):
-    g.hacer("Eliminar")
+
+
+    
+
+def eliminar(xs):
+    for elem in xs:
+        elem.hacer("Eliminar")
+
 
 def desaparecer(g):
     g.hacer("Desaparecer")
-
 
 def escanear(e):
     e.hacer("Escanear")
 
 
-    
+def aparece_texto(t):
+    t.hacer("ApareceTexto")        

@@ -57,6 +57,14 @@ grilla_animacion_cinta = pilas.actores.Animacion(grilla_cinta, True)
 grilla_animacion_cinta.y = 200
 grilla_animacion_cinta.x = -360
 grilla_animacion_cinta.z = 2
+
+brazo1 = Elementos(pilas,183,323)
+brazo1.imagen = SMALL_IMG_DIR + 'brazo1.png'
+brazo2 = Elementos(pilas,163,413)
+brazo2.rotacion = 50
+brazo2.imagen = SMALL_IMG_DIR + 'brazo2.png'
+brazo3 = Elementos(pilas, 150, 496)
+brazo3.imagen = SMALL_IMG_DIR + 'brazo3.png'
 #############################
 
 ########### Actores #############
@@ -79,6 +87,16 @@ def generar_rueda():
     return rueda
 
 
+def generar_texto(text, x, y):
+    t = pilas.actores.Texto(text, magnitud=27,x=x,y=y)
+    t.color = 'rojo'
+    t.transparencia = 100
+    return t
+ 
+def subir_diagonal(g):
+    pilas.utils.interpolar(g, 'x', 210, 3.5)
+    pilas.utils.interpolar(g, 'y', 270, 3.5)
+
 #############################
 ########### Movimientos ##########
 #############################
@@ -89,15 +107,15 @@ pilas.comportamientos.vincular(Mueve_y)
 pilas.comportamientos.vincular(Mueve_y_arriba)
 pilas.comportamientos.vincular(Eliminar)
 pilas.comportamientos.vincular(Escanear)
-def subir_diagonal(g):
-    pilas.utils.interpolar(g, 'x', 210, 3.5)
-    pilas.utils.interpolar(g, 'y', 270, 3.5)
-def generar_texto(text, x, y):
-    t = pilas.actores.Texto(text, magnitud=27,x=x,y=y)
-    t.color = 'rojo'
-    return t
+pilas.comportamientos.vincular(ApareceTexto)
+    
+
+
 def general():
     m = generar_rueda()
+    texto_0 = generar_texto('COMELA', 443, 355)
+    texto_1 = generar_texto('JONATHAN', 443, 311)
+    texto_2 = generar_texto('BLOW', 443, 265)
     # Tubo a la cinta
     pilas.tareas.agregar(1, mueve_y, m, 285)
     # cinta al horno
@@ -113,10 +131,13 @@ def general():
     # scanner
     pilas.tareas.agregar(20, escanear, laser)
     pilas.tareas.agregar(22, desaparecer, m)
-    pilas.tareas.agregar(23.5, generar_texto, 'COMELA', 443, 355)
-    pilas.tareas.agregar(23.5, generar_texto, 'JONATHAN', 443, 311)
-    pilas.tareas.agregar(23.5, generar_texto, 'BLOW', 443, 265)
-    pilas.tareas.agregar(24.5, eliminar, m)
+    # pilas.tareas.agregar(1, generar_texto, 'COMELA', 443, 355)
+    # pilas.tareas.agregar(23.5, generar_texto, 'JONATHAN', 443, 311)
+    # pilas.tareas.agregar(23.5, generar_texto, 'BLOW', 443, 265)
+    pilas.tareas.agregar(23.5, aparece_texto, texto_0)
+    pilas.tareas.agregar(23.5, aparece_texto, texto_1)
+    pilas.tareas.agregar(23.5, aparece_texto, texto_2)
+    pilas.tareas.agregar(27, eliminar, [m, texto_0,texto_1,texto_2])
     
 emisor = pilas.actores.Emisor(horno.x, horno.y+100)
 emisor.imagen_particula = pilas.imagenes.cargar_grilla("humo2.png")
@@ -128,6 +149,14 @@ emisor.dy_max = 30
 emisor.composicion = "blanco"
 emisor.duracion = 4
 
-pilas.tareas.agregar(1,general)
-#pilas.tareas.agregar(2, mono_interp)
+def bar():
+    pilas.tareas.agregar(1, general)
+    pilas.tareas.agregar(28, general)
+    pilas.tareas.agregar(52, general)
+
+pilas.tareas.agregar(1, general)
+pilas.tareas.agregar(28, general)
+# ruedolph
+pilas.tareas.agregar(52, general)
+pilas.tareas.siempre(79, bar)
 pilas.ejecutar()
