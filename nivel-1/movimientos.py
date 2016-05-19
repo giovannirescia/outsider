@@ -109,15 +109,9 @@ def eliminar(g):
 def desaparecer(g):
     g.hacer("Desaparecer")
 
-def subir_diagonal(g):
-    pilas.utils.interpolar(g, 'x', 210, 3.5)
-    pilas.utils.interpolar(g, 'y', 270, 3.5)
 
 def escanear(e):
     e.hacer("Escanear")
 
-def generar_texto(text, x, y):
-    t = pilas.actores.Texto(text, magnitud=27,x=x,y=y)
-    t.color = 'rojo'
-    return t
+
     
