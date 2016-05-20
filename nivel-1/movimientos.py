@@ -23,7 +23,6 @@ class Mueve_y_arriba(pilasengine.comportamientos.Comportamiento):
         self.receptor = receptor
         self.stamina = stamina
         self.rueda = rueda
-        self.rueda.imagen = IMG_DIR+'/ruedolph_small.png'
     def actualizar(self):
         if self.stamina<0:
             self.receptor.y += 8
@@ -33,11 +32,9 @@ class Mueve_y_arriba(pilasengine.comportamientos.Comportamiento):
 
 class Mueve_x(pilasengine.comportamientos.Comportamiento):
 
-    def iniciar(self, receptor, stamina, img=''):
+    def iniciar(self, receptor, stamina):
         self.receptor = receptor
         self.stamina = stamina
-        if img is not '':
-           self.receptor.imagen = img
     def actualizar(self):
         if self.stamina>0:
             self.receptor.x += 2
@@ -98,8 +95,8 @@ class ApareceTexto(pilasengine.comportamientos.Comportamiento):
     def actualizar(self):
         return True        
 
-def mueve_x(g, stamina, img=''):
-    g.hacer("Mueve_x", stamina, img)
+def mueve_x(g, stamina):
+    g.hacer("Mueve_x", stamina)
 
 def mueve_y(g, stamina):
     g.hacer("Mueve_y",stamina)
@@ -108,13 +105,16 @@ def mueve_y_arriba(g, stamina, rueda):
     g.hacer("Mueve_y_arriba",stamina, rueda)
 
 
-
-    
+def llevar_rueda(g, r):
+    r.imitar(g.sensor)
+    g.rotacion =[360], 5
 
 def eliminar(xs):
     for elem in xs:
         elem.hacer("Eliminar")
 
+def cambiar_imagen(actor, imagen):
+    actor.imagen = imagen
 
 def desaparecer(g):
     g.hacer("Desaparecer")
