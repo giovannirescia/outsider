@@ -16,7 +16,6 @@ class Mueve_y(pilasengine.comportamientos.Comportamiento):
         else:
              return True
 
-
 class Mueve_y_arriba(pilasengine.comportamientos.Comportamiento):
 
     def iniciar(self, receptor, stamina, rueda):
@@ -32,16 +31,37 @@ class Mueve_y_arriba(pilasengine.comportamientos.Comportamiento):
 
 class Mueve_x(pilasengine.comportamientos.Comportamiento):
 
-    def iniciar(self, receptor, stamina):
+    def iniciar(self, receptor, stamina, cinta):
         self.receptor = receptor
+        self.cinta = cinta
         self.stamina = stamina
     def actualizar(self):
         if self.stamina>0:
             self.receptor.x += 2
             self.stamina -= 2
+            self.cinta.imagen.avanzar(6)
         else:
              return True
 
+# para que las ruedas suban la diagonal
+class Mueve_x_y(pilasengine.comportamientos.Comportamiento):
+
+    def iniciar(self, receptor, stamina_x, stamina_y, cinta):
+        self.receptor = receptor
+        self.stamina_x = stamina_x
+        self.stamina_y = stamina_y
+        self.cinta = cinta
+    def actualizar(self):
+        velocidad = 1
+        if self.stamina_x>0:
+            self.receptor.x += velocidad + 1
+            self.stamina_x -= (velocidad + 1)
+            if self.stamina_y:
+                self.receptor.y += velocidad
+                self.stamina_y -= velocidad
+            self.cinta.imagen.avanzar(6)
+        else:
+             return True
 
 class Eliminar(pilasengine.comportamientos.Comportamiento):
 
@@ -80,12 +100,12 @@ class Escanear(pilasengine.comportamientos.Comportamiento):
     def actualizar(self):
         if self.prende:
             if self.receptor.transparencia > 0:
-                self.receptor.transparencia -= 1
+                self.receptor.transparencia -= 10
             else:
                 self.prende = False
         else:
             if self.receptor.transparencia < 100:
-                self.receptor.transparencia += 1
+                self.receptor.transparencia += 10
             else:
                 return True
 
@@ -95,8 +115,8 @@ class ApareceTexto(pilasengine.comportamientos.Comportamiento):
     def actualizar(self):
         return True        
 
-def mueve_x(g, stamina):
-    g.hacer("Mueve_x", stamina)
+def mueve_x(g, stamina, cinta):
+    g.hacer("Mueve_x", stamina, cinta)
 
 def mueve_y(g, stamina):
     g.hacer("Mueve_y",stamina)
@@ -104,6 +124,8 @@ def mueve_y(g, stamina):
 def mueve_y_arriba(g, stamina, rueda):
     g.hacer("Mueve_y_arriba",stamina, rueda)
 
+def mueve_x_y(g, stamina_x, stamina_y, cinta):
+        g.hacer("Mueve_x_y", stamina_x, stamina_y, cinta)
 
 def llevar_rueda(g, r):
     r.imitar(g.sensor)
