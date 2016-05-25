@@ -45,7 +45,7 @@ def verificar2(evento):
 
 def imantacion(protagonista, iman):
     protagonista.imantate()
-    iman.figura.eliminar()
+
 class Escenario2(pilasengine.escenas.Escena):
     def iniciar(self, r):
         self.fondo = pilas.fondos.Fondo(imagen=
@@ -83,7 +83,7 @@ class Ruedolph(pilasengine.actores.Actor):
     def iniciar(self):
         self.imagen = SMALL_IMG_DIR + 'ruedolph.png'
         self.radio_de_colision = 20
-        self.figura = pilas.fisica.Circulo(-900,-389, 50,
+        self.figura = pilas.fisica.Circulo(-780,-389, 50,
             friccion=0, restitucion=0, dinamica=1)
         self.figura_encaje = pilas.fisica.Circulo(self.x, self.y, 20,
             friccion=0, restitucion=0, dinamica=0, sensor=1)
@@ -97,6 +97,7 @@ class Ruedolph(pilasengine.actores.Actor):
     def actualizar(self):
         velocidad = 10
         salto = self.salto
+        pilas.eventos.pulsa_tecla.conectar(verificar)
         pilas.fisica.gravedad_y = -10
         # La camara sigue a Ruedolph
         cam = pilas.escena_actual().camara
@@ -238,7 +239,37 @@ class Pendorcho(pilasengine.actores.Actor):
     def actualizar(self):
         self.mc.x, self.mc.y, self.piso.x, self.piso.y = self.x, self.y, self.x, self.y-50
 
+#Eslabon principal
+class EslabonPrincipal(pilasengine.actores.Actor):
+    def iniciar(self):
+        self.imagen = SMALL_IMG_DIR+'/eslabon.png'
+        self.escala = 0.4
+        self.x = -300
+        self.z = 2
+        self.y = -400
+        self.sigue = None
+    def actualizar(self):
+        if self.sigue is not None:
+                self.x = self.sigue.x
+                self.y = self.sigue.y
 
+#Eslabones secundarios
+class EslabonSecundario(pilasengine.actores.Actor):
+    def iniciar(self, x, y, sigue):
+        self.x = sigue.x + 10
+        self.z = 2
+        self.sigue = sigue
+        self.escala = 0.4
+        self.imagen = SMALL_IMG_DIR+'/eslabon.png'
+    def actualizar(self):
+        self.rotacion = self.sigue.rotacion / 2
+        self.x = self.sigue.x + 25
+        if self.y > -400:
+            self.x = self.sigue.x
+        self.y = max(self.sigue.y - 30, -400) - self.sigue.rotacion/2
+#t = pilas.fisica.Rectangulo(x=0,y=-100,plataforma=1, ancho=450, alto = 20)
+pilas.actores.vincular(EslabonPrincipal)
+pilas.actores.vincular(EslabonSecundario)
 pilas.actores.vincular(Pendorcho)
 pilas.actores.vincular(Ruedolph)
 pilas.actores.vincular(Elementos)
@@ -361,6 +392,7 @@ def rm_emisor():
         y.eliminar()
 def verificar(evento):
     global en_colision
+    ruedolph = get_ruedolph()
     if en_colision and pilas.control.boton:
         en_colision = False
         aux = None
@@ -381,7 +413,13 @@ def encajar(Ruedolph, pendorchos):
     en_colision = True
 
 
+def agarra_metal_rojo(rueda, metal):
+    if rueda.imantado:
+        rueda.imagen = SMALL_IMG_DIR + 'ruedolph_fase_1.png'
 
+def agarra_metal_azul(rueda, metal):
+    if rueda.imantado:
+        rueda.imagen = SMALL_IMG_DIR + 'ruedolph_fase_2.png'
 ###################################################
 
 ################## Movimientos ####################
@@ -510,7 +548,6 @@ def escenario2():
 
 
 
-
 ######################################
 
 
@@ -586,10 +623,10 @@ class Escenario_1(pilasengine.escenas.Escena):
                 restitucion = 0, friccion =0, amortiguacion=0, plataforma=1)
         pared = pilas.fisica.Rectangulo(x=870,y=0,ancho=20,\
                 alto=1080, restitucion = 0, friccion =0, amortiguacion=0, plataforma=1)
-    
+        # ventana
         act = pilas.actores.ActorInvisible(x=830, y=-40,)
         act.transparencia = 50
-        act.radio_de_colision=2
+        act.radio_de_colision=400
         act.figura = pilas.fisica.Rectangulo(x=830, y=-40,alto=50,\
         ancho=50,dinamica=False,plataforma=1,sensor=1)
     
@@ -630,14 +667,57 @@ class Escenario_1(pilasengine.escenas.Escena):
     
         pilas.tareas.siempre(94, bar)
         pilas.tareas.condicional(1, ruedolph.movete)
-        
+        pilas.colisiones.agregar(ruedolph, act, pasar_escenario)
         pilas.colisiones.agregar(ruedolph, pendorchos, encajar)
         
         return ruedolph
     
-    
+class Escenario_2(pilasengine.escenas.Escena):
+    def iniciar(self):
+        self.fondo = pilas.fondos.Fondo(imagen=
+                SMALL_IMG_DIR+"escenario_2_small.png")
+    def cambiar_a_escenario_2(self):
+        ruedolph = Ruedolph(pilas)
+        ruedolph.movete()
+        colgables = map(lambda attr: Pendorcho(pilas,x=attr[0],y=attr[1],centro=attr[2],img=attr[3]), coor_esc_2)
+        iman = pilas.actores.Actor(x=550, y=-280)
+        iman.transparencia = 100
+        iman.radio_de_colision = 100
+        piso_e2 = pilas.fisica.Rectangulo(y=-450,ancho=2000,\
+                    restitucion = 0, friccion =0, amortiguacion=0, plataforma=1)
+        pared_e2 = pilas.fisica.Rectangulo(x=-870,y=0,ancho=20,\
+                    alto=1080, restitucion = 0, friccion =0, amortiguacion=0, plataforma=1)
+        metal_rojo = pilas.actores.Actor(x=236, y=426)
+        metal_rojo.radio_de_colision = 30
+        metal_rojo.imagen = SMALL_IMG_DIR + 'metal_rojo_1.png'
+        metal_azul = pilas.actores.Actor(x=-623, y=200)
+        metal_azul.radio_de_colision = 30
+        metal_azul.imagen = SMALL_IMG_DIR + 'metal_azul_3.png'
+
+        # generamos la cadena
+        eslabon = EslabonPrincipal(pilas)
+        eslabon.aprender('arrastrable')
+        xs = [eslabon]
+        for j in range(0, 19):
+            xs.append(EslabonSecundario(pilas,0,0,xs[j]))
+        pilas.colisiones.agregar(ruedolph, iman, imantacion)
+        pilas.colisiones.agregar(ruedolph, metal_rojo, agarra_metal_rojo)
+        pilas.colisiones.agregar(ruedolph, metal_azul, agarra_metal_azul)
+        pilas.colisiones.agregar(ruedolph, eslabon, seguir_rueda)
+        pilas.colisiones.agregar(ruedolph, colgables, encajar)
+        return ruedolph
 pilas.escenas.vincular(Escenario_1)
+pilas.escenas.vincular(Escenario_2)
 e1 = pilas.escenas.Escenario_1(True)
+
+
+def pasar_escenario():
+    e2 = pilas.escenas.Escenario_2()
+    e2.cambiar_a_escenario_2()
+    ruedolph = get_ruedolph()
+    pilas.eventos.pulsa_tecla.conectar(verificar)
+
 ruedolph = e1.cambiar_a_escenario_1()
-pilas.eventos.pulsa_tecla.conectar(verificar)
+
+
 pilas.ejecutar()
