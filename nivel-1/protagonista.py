@@ -10,9 +10,9 @@ pilas = pilasengine.iniciar()
 class Ruedolph(pilasengine.actores.Actor):
 
     def iniciar(self):
-        self.imagen = IMG_DIR + "estaticas/ruedolph_concept_art.png"
+        self.imagen = SMALL_IMG_DIR + 'ruedolph.png'
         self.radio_de_colision = 20
-        self.figura = pilas.fisica.Circulo(self.x, self.y, 50,
+        self.figura = pilas.fisica.Circulo(-0,-0, 50,
             friccion=0, restitucion=0, dinamica=1)
         self.figura_encaje = pilas.fisica.Circulo(self.x, self.y, 20,
             friccion=0, restitucion=0, dinamica=0, sensor=1)
@@ -25,8 +25,30 @@ class Ruedolph(pilasengine.actores.Actor):
 
     def actualizar(self):
         velocidad = 10
-        salto = 120
+        salto = 150
         pilas.fisica.gravedad_y = -10
+        # La camara sigue a Ruedolph
+        if self.x >=0:
+            if self.x + 1000.0/(cam.escala)<=1000:
+                cam.x = self.x
+            else:
+                cam.x = 1000 - 1000.0/(cam.escala)
+        else:
+            if self.x - 1000.0/(cam.escala) > -1000:
+                cam.x = self.x
+            else:
+                cam.x = -1000 + 1000.0/(cam.escala)
+        if self.y >=0:
+            if self.y + 540.0/(cam.escala) <= 540:
+                cam.y = self.y
+            else:
+                cam.y = 540 - 540.0/(cam.escala)
+        else:
+            if self.y - 540.0/(cam.escala) > -540:
+                cam.y = self.y
+            else:
+                cam.y = -540 + 540.0/(cam.escala)
+        
         self.x = self.figura.x
         self.y = self.figura.y
         self.figura_encaje.x = self.x
@@ -60,7 +82,6 @@ class Ruedolph(pilasengine.actores.Actor):
 
     def esta_pisando_el_suelo(self):
         return any(isinstance(x, pilasengine.fisica.rectangulo.Rectangulo) for x in self.sensor_pies.figuras_en_contacto)
-#        return len(self.sensor_pies.figuras_en_contacto) > 0
 
 
 class Pendorcho(pilasengine.actores.Actor):
