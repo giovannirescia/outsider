@@ -47,7 +47,7 @@ class Ruedolph(pilasengine.actores.Actor):
     def actualizar(self):
         velocidad = 10
         salto = self.salto
-        pilas.eventos.pulsa_tecla.conectar(verificar)
+#        pilas.eventos.pulsa_tecla.conectar(verificar)
         pilas.fisica.gravedad_y = -10
         # La camara sigue a Ruedolph
         cam = pilas.escena_actual().camara
@@ -711,5 +711,5 @@ pilas.escenas.vincular(Escenario_2)
 
 e1 = pilas.escenas.Escenario_1(True)
 ruedolph = e1.cambiar_a_escenario_1()
-
+pilas.eventos.pulsa_tecla.conectar(verificar)
 pilas.ejecutar()
