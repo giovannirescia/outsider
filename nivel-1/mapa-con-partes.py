@@ -620,7 +620,7 @@ class Escenario_1(pilasengine.escenas.Escena):
         # ventana
         ventana = pilas.actores.ActorInvisible(x=830, y=-40)
         ventana.transparencia = 50
-        ventana.figura_de_colision = pilas.fisica.Rectangulo(830, -40, 50, 50, sensor=True, dinamica=False)
+        ventana.figura_de_colision = pilas.fisica.Rectangulo(830, -40, 550, 550, sensor=True, dinamica=False)
         plataforma_piso = pilas.fisica.Rectangulo(x=200, y=210, alto=20,
                                                   ancho=150, restitucion=0, friccion=0, amortiguacion=0, plataforma=1)
 
