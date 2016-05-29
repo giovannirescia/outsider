@@ -660,6 +660,8 @@ class Escenario_1(pilasengine.escenas.Escena):
         pilas.colisiones.agregar(ruedolph, ventana, pasar_a_escenario_2)
         pilas.colisiones.agregar(ruedolph, pendorchos, encajar)
 
+        monticulo = pilas.actores.Actor(-640, -271, SMALL_IMG_DIR + 'monticulo-small.png')
+
         return ruedolph
 
 
