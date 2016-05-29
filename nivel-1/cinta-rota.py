@@ -30,14 +30,15 @@ def encajar(Ruedolph, pendorchos):
     en_colision = True
 
 def mueve_x(b, x, t):
-    pilas.utils.interpolar(b, 'x', x,t)
+    pilas.utils.interpolar(b, 'x', x,t,'lineal')
 
 def mueve_x_y(b, x, y, t=0.5):
-    pilas.utils.interpolar(b,'x', x, t)
-    pilas.utils.interpolar(b,'y', y, t)
+    pilas.utils.interpolar(b,'x', x, t,'lineal')
+    pilas.utils.interpolar(b,'y', y, t,'lineal')
 
 def cambiar_img(b):
     b.imagen = SMALL_IMG_DIR + 'bronce-roto.png'
+    b.x = 195
 
 
 def opa(e, c):
@@ -51,36 +52,41 @@ def rm_emisor():
 
 def girar(rueda, rodillo):
     if pilas.control.boton:
-        em = generar_emisor()
+        em = generar_emisor_caida(170, -190)
+        em2 = generar_emisor_caida(222, -222)
+#        f = pilas.actores.Animacion(grilla= grilla_cinta_rota, ciclica=1)
+  #      f.z = 2
         pilas.control.boton = True
         rueda.figura.x = rodillo.x
         rueda.figura.y = rodillo.y 
-        pilas.utils.interpolar(rueda, 'rotacion', -720, 3)
-        pilas.utils.interpolar(rodillo, 'rotacion', -720, 3)
-        rodillo.estamina = 180
-        pilas.tareas.agregar(0, mueve_x_y, bloque, 18, 94,2)
-        pilas.tareas.agregar(0.2, mueve_x, bloque, 67,2)
-        pilas.tareas.agregar(0.44, mueve_x_y, bloque, 157, -134, 2)
-        pilas.tareas.agregar(1.7, opa, em, 0)
-        pilas.tareas.agregar(2, cambiar_img, bloque)
-        pilas.tareas.agregar(2.5, rm_emisor)
-#    cinta.imagen(avanzar)
+        pilas.utils.interpolar(rueda, 'rotacion', -520, 2,'lineal')
+        pilas.utils.interpolar(rodillo, 'rotacion', -520, 2,'lineal')
+        rodillo.estamina = 155
+#        pilas.tareas.agregar(0, mueve_x, bloque, 3, 0.5)
+        pilas.tareas.agregar(0.0, mueve_x_y, bloque, 4.5, 93, 1)
+        pilas.tareas.agregar(1.0, mueve_x, bloque, 46.7, 0.5)
+        pilas.tareas.agregar(1.5, mueve_x_y, bloque, 157, -134, 1)
+        pilas.tareas.agregar(2.5, opa, em, 0)
+        pilas.tareas.agregar(2.5, opa, em2, 0)
+        pilas.tareas.agregar(3.5, cambiar_img, bloque)
+        pilas.tareas.agregar(4.5, rm_emisor)
+#        cinta.imagen(avanzar)
 
 
 
-def generar_emisor():
-    emisor = pilas.actores.Emisor(140, -190)
+def generar_emisor_caida(x, y):
+    emisor = pilas.actores.Emisor(x, y)
     emisor.imagen_particula = pilas.imagenes.cargar_grilla("humo2.png")
     emisor.constante = True
     emisor.transparencia_min = 100
-    emisor.frecuencia_creacion = 0.0006
+    emisor.frecuencia_creacion = 0.1
     emisor.x_max = 30
     emisor.x_min = -50
     emisor.dy_min = 4
-    emisor.vida = 3
+    emisor.vida = 2
     emisor.dy_max = 6
     emisor.composicion = "blanco"
-    emisor.duracion = 4
+    emisor.duracion = 2
     return emisor
 
 #em = generar_emisor()
@@ -214,10 +220,13 @@ rodillo.aprender('arrastrable')
 rodillo = Pendorcho(pilas, 17, -63, SMALL_IMG_DIR + 'rodillo-3.png', cinta_rota)
 rodillo.z = 1
 
-bloque = Elementos(pilas, x=-42, y=178, es='bloque-bronce-sano')
+bloque = Elementos(pilas, x=-58, y=200, es='bloque-bronce-sano')
 bloque.imagen = SMALL_IMG_DIR + 'bronce.png'
 bloque.escala = 0.7
-bloque.z = 2
+bloque.z = 1
+bloque.rotacion = 10
+bloque.aprender('arrastrable')
+
 pilas.eventos.pulsa_tecla.conectar(verificar)
 pilas.colisiones.agregar(ruedolph, rodillo, girar)
 pilas.ejecutar()
