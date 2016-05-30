@@ -43,7 +43,7 @@ class Ruedolph(pilasengine.actores.Actor):
         self.sensor_pies = pilas.fisica.Rectangulo(self.x, self.y, 30, 5,
                                                    sensor=True, dinamica=False, restitucion=0, amortiguacion=0)
         self.salto = 120
-
+        self.fase = 0
     def actualizar(self):
         velocidad = 10
         salto = self.salto
@@ -187,18 +187,25 @@ class Garra(pilasengine.actores.Actor):
 
 
 class Pendorcho(pilasengine.actores.Actor):
-    def iniciar(self, x, y, img, centro=(110, 80)):
+    def iniciar(self, x, y, img, centro=(110, 80), cinta_rota = None):
         self.imagen = img
         self.y = y
         self.x = x
+        self.bloque = None
         self.centro = centro
+        self.cinta_rota = cinta_rota
         self.radio_de_colision = 10
         self.mc = Mi_Circulo(fisica=pilas.fisica, pilas=pilas, x=x, y=y,
                              radio=self.radio_de_colision, sensor=True, dinamica=False)
         self.piso = pilas.fisica.Rectangulo(x, y - 50, 30, 5, sensor=True, dinamica=False,
                                             restitucion=0, amortiguacion=0)
-
+        self.estamina_cinta_rota = 0
     def actualizar(self):
+        if self.cinta_rota is not None:
+            if self.estamina_cinta_rota:
+                self.cinta_rota.imagen.avanzar(5)
+                self.estamina_cinta_rota -= 1
+    
         self.mc.x, self.mc.y, self.piso.x, self.piso.y = self.x, self.y, self.x, self.y - 50
 
 
@@ -337,6 +344,63 @@ def mueve_cinta():
     cinta.imagen.avanzar()
 
 
+
+def generar_emisor_caida(x, y):
+    emisor = pilas.actores.Emisor(x, y)
+    emisor.imagen_particula = pilas.imagenes.cargar_grilla("humo2.png")
+    emisor.constante = True
+    emisor.transparencia_min = 100
+    emisor.frecuencia_creacion = 0.1
+    emisor.x_max = 30
+    emisor.x_min = -50
+    emisor.dy_min = 4
+    emisor.vida = 2
+    emisor.dy_max = 6
+    emisor.composicion = "blanco"
+    emisor.duracion = 2
+    return emisor
+
+
+# cinta rota
+def girar(rueda, rodillo):
+    if pilas.control.boton:
+        em = generar_emisor_caida(-291, -430)
+        em2 = generar_emisor_caida(-240, -462)
+#        f = pilas.actores.Animacion(grilla= grilla_cinta_rota, ciclica=1)
+  #      f.z = 2
+        pilas.control.boton = True
+        rueda.figura.x = rodillo.x
+        rueda.figura.y = rodillo.y 
+        pilas.utils.interpolar(rueda, 'rotacion', -520, 2,'lineal')
+        pilas.utils.interpolar(rodillo, 'rotacion', -520, 2,'lineal')
+        rodillo.estamina_cinta_rota = 155
+#        pilas.tareas.agregar(0, mueve_x, bloque, 3, 0.5)
+        pilas.tareas.agregar(0.0, aux_mueve_x_y, rodillo.bloque, -456.5, -167, 1)
+        pilas.tareas.agregar(1.0, aux_mueve_x, rodillo.bloque, -415.3, 0.5)
+        pilas.tareas.agregar(1.5, aux_mueve_x_y, rodillo.bloque, -305, -374, 1)
+        pilas.tareas.agregar(2.5, opa, em, 0)
+        pilas.tareas.agregar(2.5, opa, em2, 0)
+        pilas.tareas.agregar(3.5, cambiar_img, rodillo.bloque)
+        pilas.tareas.agregar(4.5, rm_emisor)
+#        cinta.imagen(avanzar)
+
+
+
+def aux_mueve_x(b, x, t):
+    pilas.utils.interpolar(b, 'x', x,t,'lineal')
+
+def aux_mueve_x_y(b, x, y, t=0.5):
+    pilas.utils.interpolar(b,'x', x, t,'lineal')
+    pilas.utils.interpolar(b,'y', y, t,'lineal')
+
+def cambiar_img(b):
+    b.imagen = SMALL_IMG_DIR + 'bronce-roto.png'
+    b.x = -266
+
+def opa(e, c):
+    e.transparencia_min = c
+
+
 def generar_emisor(const, horno):
     emisor = pilas.actores.Emisor(horno.x, horno.y + 100)
     emisor.imagen_particula = pilas.imagenes.cargar_grilla("humo2.png")
@@ -401,11 +465,19 @@ def imantacion(x, y):
 def agarra_metal_rojo(rueda, metal):
     if rueda.imantado:
         rueda.imagen = SMALL_IMG_DIR + 'ruedolph_fase_1.png'
+        rueda.fase = 1
 
 
 def agarra_metal_azul(rueda, metal):
     if rueda.imantado:
         rueda.imagen = SMALL_IMG_DIR + 'ruedolph_fase_2.png'
+        rueda.fase = 2
+
+
+def agarra_metal_amarillo(rueda, metal):
+    if rueda.imantado:
+        rueda.imagen = SMALL_IMG_DIR + 'ruedolph_fase_3.png'
+        rueda.fase = 3
 
 
 def pasar_a_escenario_2():
@@ -548,7 +620,10 @@ def escenario2():
     pilas.escenas.Escenario2(r)
     pilas.escena_actual().ejecutar()
 
-
+def get_elem(tipo):
+    xs = pilas.actores.listar_actores()
+    ys = filter(lambda x: isinstance(x, Elementos), xs)
+    return list(filter(lambda x: x.es == tipo, ys))
 ######################################
 
 
@@ -557,7 +632,8 @@ def escenario2():
 
 #######################################
 
-
+def bg(elem):
+    elem.z = 2
 class Escenario_1(pilasengine.escenas.Escena):
     def iniciar(self, pe):
         self.fondo = pilas.fondos.Fondo(imagen=SMALL_IMG_DIR + 'fondo_small.jpg')
@@ -603,6 +679,40 @@ class Escenario_1(pilasengine.escenas.Escena):
         cinta.z = 2
         cinta.imagen = grilla_cinta
 
+
+
+        if self.pe:
+            bloque_bronce = Elementos(pilas, x=-519, y=-40, es='bloque-bronce-sano')
+            bloque_bronce.imagen = SMALL_IMG_DIR + 'bronce.png'
+            bloque_bronce.z = 3
+        else:
+            bloque_bronce = Elementos(pilas, x=-266, y=-374, es='bloque-bronce-roto')
+            bloque_bronce.imagen = SMALL_IMG_DIR + 'bronce-roto.png'
+            bloque_bronce.z = 3
+
+        bloque_bronce.escala = 0.7
+        bloque_bronce.radio_de_colision = 60
+        bloque_bronce.rotacion = 10
+        bloque_bronce.aprender('arrastrable')
+
+
+
+
+
+
+        grilla_cinta_rota = pilas.imagenes.cargar_grilla(SMALL_IMG_DIR + 'cinta-rota-grilla.png', 3)
+        cinta_rota = pilas.actores.Elementos(x=-474, y=-224.7, es='cinta-rota')
+        cinta_rota.z = 5
+        cinta_rota.aprender('arrastrable')
+        cinta_rota.imagen = grilla_cinta_rota
+
+        rodillo = Pendorcho(pilas, -454, -290.8, SMALL_IMG_DIR + 'rodillo-3.png', (0,0),cinta_rota)
+        rodillo.z = 1
+        rodillo.bloque = bloque_bronce
+        rodillo.centro = (20,20)
+        rodillo.aprender('arrastrable')
+
+
         base = Base(pilas, 95, 426, SMALL_IMG_DIR + 'brazo3.png')
         brazo = Brazo(pilas, parte=SMALL_IMG_DIR + 'brazo2.png', base_param=base)
         garra = Garra(pilas, parte=SMALL_IMG_DIR + 'brazo1.png', brazo=brazo)
@@ -636,8 +746,9 @@ class Escenario_1(pilasengine.escenas.Escena):
             eslabon = EslabonPrincipal(pilas, x=600)
             eslabon.aprender('arrastrable')
             xs = [eslabon]
-            for j in range(0, 19):
+            for j in range(0, 49):
                 xs.append(EslabonSecundario(pilas, 0, 0, xs[j]))
+            map(bg, xs)
             pilas.colisiones.agregar(ruedolph, eslabon, seguir_rueda)
         ys = map(lambda attr: Pendorcho(pilas, x=attr[0], y=attr[1], centro=attr[2], img=attr[3]), coor_esc_1)
 
@@ -656,7 +767,9 @@ class Escenario_1(pilasengine.escenas.Escena):
 
         pilas.tareas.siempre(94, bar)
         pilas.tareas.condicional(1, ruedolph.movete)
-
+        if self.pe:
+            pilas.colisiones.agregar(ruedolph, rodillo, girar)
+        pilas.colisiones.agregar(ruedolph, bloque_bronce, agarra_metal_amarillo)
         pilas.colisiones.agregar(ruedolph, ventana, pasar_a_escenario_2)
         pilas.colisiones.agregar(ruedolph, pendorchos, encajar)
 
@@ -673,6 +786,7 @@ class Escenario_2(pilasengine.escenas.Escena):
     def cambiar_a_escenario_2(self):
         ruedolph = Ruedolph(pilas)
         ruedolph.movete()
+        ruedolph.z = 1
         # generamos los pendorchos, coor_esc_2 es una lista
         # donde cada elementos es (x, y, (centro_x, centro_y), ruta_de_la_imagen)
         colgables = map(lambda attr: Pendorcho(pilas, x=attr[0], y=attr[1], centro=attr[2], img=attr[3]), coor_esc_2)
@@ -700,6 +814,7 @@ class Escenario_2(pilasengine.escenas.Escena):
             xs = [eslabon]
             for j in range(0, 19):
                 xs.append(EslabonSecundario(pilas, 0, 0, xs[j]))
+        map(bg, xs)
         pilas.colisiones.agregar(ruedolph, iman, imantacion)
         pilas.colisiones.agregar(ruedolph, metal_rojo, agarra_metal_rojo)
         pilas.colisiones.agregar(ruedolph, metal_azul, agarra_metal_azul)
