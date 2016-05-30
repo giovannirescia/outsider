@@ -11,6 +11,7 @@ from coordenadas import coor_esc_1, coor_esc_2
 # debug = 1000, 500
 # GLOBAL
 en_colision = False
+chequear = True
 # GLOBAL
 r = None
 pilas = pilasengine.iniciar(2000, 1080, pantalla_completa=False, con_aceleracion='OpenGL')
@@ -38,6 +39,7 @@ class Ruedolph(pilasengine.actores.Actor):
                                                   friccion=0, restitucion=0, dinamica=0, sensor=1)
         self.imantado = False
         self.se_puede_mover = False
+        self.garra = None
         self.figura.sin_rotacion = True
         self.figura.escala_de_gravedad = 3
         self.sensor_pies = pilas.fisica.Rectangulo(self.x, self.y, 30, 5,
@@ -51,26 +53,29 @@ class Ruedolph(pilasengine.actores.Actor):
         pilas.fisica.gravedad_y = -10
         # La camara sigue a Ruedolph
         cam = pilas.escena_actual().camara
-        if self.x >= 0:
-            if self.x + 1000.0 / (cam.escala) <= 1000:
-                cam.x = self.x
-            else:
-                cam.x = 1000 - 1000.0 / (cam.escala)
+        if self.garra is not None:
+            self.figura.x, self.figura.y = self.garra.extremo
         else:
-            if self.x - 1000.0 / (cam.escala) > -1000:
-                cam.x = self.x
+            if self.x >= 0:
+                if self.x + 1000.0 / (cam.escala) <= 1000:
+                    cam.x = self.x
+                else:
+                    cam.x = 1000 - 1000.0 / (cam.escala)
             else:
-                cam.x = -1000 + 1000.0 / (cam.escala)
-        if self.y >= 0:
-            if self.y + 540.0 / (cam.escala) <= 540:
-                cam.y = self.y
+                if self.x - 1000.0 / (cam.escala) > -1000:
+                    cam.x = self.x
+                else:
+                    cam.x = -1000 + 1000.0 / (cam.escala)
+            if self.y >= 0:
+                if self.y + 540.0 / (cam.escala) <= 540:
+                    cam.y = self.y
+                else:
+                    cam.y = 540 - 540.0 / (cam.escala)
             else:
-                cam.y = 540 - 540.0 / (cam.escala)
-        else:
-            if self.y - 540.0 / (cam.escala) > -540:
-                cam.y = self.y
-            else:
-                cam.y = -540 + 540.0 / (cam.escala)
+                if self.y - 540.0 / (cam.escala) > -540:
+                    cam.y = self.y
+                else:
+                    cam.y = -540 + 540.0 / (cam.escala)
 
         self.x = self.figura.x
         self.y = self.figura.y
@@ -113,6 +118,8 @@ class Ruedolph(pilasengine.actores.Actor):
     def imantate(self):
         self.imantado = True
 
+    def poner_garra(self, g):
+        self.garra = g
 
 class Elementos(pilasengine.actores.Actor):
     def iniciar(self, x=0, y=0, es=''):
@@ -236,7 +243,7 @@ class EslabonSecundario(pilasengine.actores.Actor):
 
     def actualizar(self):
         self.rotacion = self.sigue.rotacion / 2
-        self.x = min(self.sigue.x + 25, 725)
+        self.x = min(self.sigue.x + 25, 779)
         if self.y > -400:
             self.x = self.sigue.x
         self.y = max(self.sigue.y - 30, -400) - self.sigue.rotacion / 2
@@ -480,6 +487,93 @@ def agarra_metal_amarillo(rueda, metal):
         rueda.fase = 3
 
 
+def crear_stats(fase):
+    stats = pilas.actores.Actor(452, 304)
+    if fase == 3:
+        stats.imagen = SMALL_IMG_DIR + 'stats-ruedolph-sobra.png'
+    elif fase == 4:
+        stats.imagen = SMALL_IMG_DIR + 'stats-ok.png'
+    stats.transparencia = 100
+    return stats
+
+
+def act_check_flag():
+    global chequear
+    chequear = True
+
+def check():
+    global chequear
+    ruedolph = get_ruedolph()
+    n = ruedolph.fase
+    act_xs = pilas.actores.listar_actores()
+    elementos_xs = filter(lambda x: isinstance(x, Elementos), act_xs)
+    elem_es_xs = map(lambda x: x.es, elementos_xs)
+    laser = elementos_xs[elem_es_xs.index('laser')]
+    base = filter(lambda x: isinstance(x, Base), act_xs)[0]
+    brazo = filter(lambda x: isinstance(x, Brazo), act_xs)[0]
+    garra = filter(lambda x: isinstance(x, Garra), act_xs)[0]
+    stats = crear_stats(n)
+    ruedolph.se_puede_mover = False
+    if chequear:
+        t1 = pilas.tareas.agregar(1, laser_fade_in, laser)
+        pilas.tareas.agregar(1.1, eliminar_t, t1)
+        t2 = pilas.tareas.agregar(4, laser_fade_out, laser)
+        pilas.tareas.agregar(4.1, eliminar_t, t2)
+
+
+        if ruedolph.fase == 3:
+            # garra agarra ruedolph y lo desecha
+            t3 = pilas.tareas.agregar(5, aparece_texto, stats)
+            pilas.tareas.agregar(5.1, eliminar_t, t3)
+            # El brazo se mueve hacia la rueda
+            t4 = pilas.tareas.agregar(8, gira, brazo, -70)
+            pilas.tareas.agregar(8.1, eliminar_t, t4)
+            
+            # Giro de la garra hacia la rueda
+            t5 = pilas.tareas.agregar(8.2, gira, garra, -55)
+            pilas.tareas.agregar(8.3, eliminar_t, t5)
+            
+            # La garra agarra la rueda agarrable
+            t6 = pilas.tareas.agregar(8.3, agarrar, ruedolph, garra)
+            pilas.tareas.agregar(8.4, eliminar_t, t6)
+            
+            t7 = pilas.tareas.agregar(8.4, llevar, base, -970, 2)
+            pilas.tareas.agregar(8.5, eliminar_t, t7)
+            
+            t8 = pilas.tareas.agregar(10.4, gira, garra, 55)
+            pilas.tareas.agregar(10.5, eliminar_t, t8)
+            
+            t9 = pilas.tareas.agregar(10.7, agarrar, ruedolph, None)
+            pilas.tareas.agregar(10.8, eliminar_t, t9)
+            
+            t10 = pilas.tareas.agregar(11, mueve_y, ruedolph, 380)
+            pilas.tareas.agregar(11.1, eliminar_t, t10)
+            
+            t11 = pilas.tareas.agregar(11.4, gira, garra, -55 + 55)
+            pilas.tareas.agregar(11.5, eliminar_t, t11)
+            
+            t12 = pilas.tareas.agregar(11.4, gira, brazo, 70)
+            pilas.tareas.agregar(11.5, eliminar_t, t12)
+            
+            t13 = pilas.tareas.agregar(11.5, llevar, base, 95, 2)
+            pilas.tareas.agregar(11.6, eliminar_t, t13)
+
+            t14 = pilas.tareas.agregar(12.1, borrate, stats)
+            pilas.tareas.agregar(12.2, eliminar_t, t14)
+            
+            t15 = pilas.tareas.condicional(13, ruedolph.movete)
+            pilas.tareas.agregar(13.1, eliminar_t, t15)
+            
+            pilas.tareas.agregar(14, ruedolph.movete)
+            chequear = False
+    elif ruedolph.fase == 4:
+        # garra agarra ruedolph y lo acepta
+#        pilas.tareas.agregar(5, crear_stats, 4)
+        pass
+def borrate(elem):
+    elem.eliminar()
+    return False
+
 def pasar_a_escenario_2():
     e2 = pilas.escenas.Escenario_2(True)
     e2.cambiar_a_escenario_2()
@@ -612,8 +706,11 @@ def bar():
 
 
 def eliminar_t(test_t):
-    pilas.tareas.eliminar_tarea(test_t)
-
+    try:
+        test_t.terminar()
+    except:
+        pass
+    return False
 
 def escenario2():
     global r
@@ -632,8 +729,11 @@ def get_elem(tipo):
 
 #######################################
 
+# poner personaje en background
 def bg(elem):
     elem.z = 2
+
+
 class Escenario_1(pilasengine.escenas.Escena):
     def iniciar(self, pe):
         self.fondo = pilas.fondos.Fondo(imagen=SMALL_IMG_DIR + 'fondo_small.jpg')
@@ -696,7 +796,7 @@ class Escenario_1(pilasengine.escenas.Escena):
         bloque_bronce.aprender('arrastrable')
 
 
-
+        check_flag = pilas.actores.ActorInvisible(-800, -380)
 
 
 
@@ -730,7 +830,7 @@ class Escenario_1(pilasengine.escenas.Escena):
         # ventana
         ventana = pilas.actores.ActorInvisible(x=830, y=-40)
         ventana.transparencia = 50
-        ventana.figura_de_colision = pilas.fisica.Rectangulo(830, -40, 550, 550, sensor=True, dinamica=False)
+        ventana.figura_de_colision = pilas.fisica.Rectangulo(830, -40, 55, 55, sensor=True, dinamica=False)
         plataforma_piso = pilas.fisica.Rectangulo(x=200, y=210, alto=20,
                                                   ancho=150, restitucion=0, friccion=0, amortiguacion=0, plataforma=1)
 
@@ -738,41 +838,50 @@ class Escenario_1(pilasengine.escenas.Escena):
                                                 alto=230, restitucion=0, friccion=0, amortiguacion=0, plataforma=1)
 
         ruedolph = Ruedolph(pilas)
+        # no es la primera vez que esta en este escenario
         if not self.pe:
             ruedolph.figura.x = 600
             ruedolph.figura.y = -389
             ruedolph.imagen = SMALL_IMG_DIR + 'ruedolph_fase_2.png'
             ruedolph.imantate()
+            ruedolph.fase = 3
+            # lugar donde ruedolph se va a posicionar para ser escaneado
+            lugar = pilas.actores.ActorInvisible(189, 284)
+            lugar.radio_de_colision = 10
+            lugar.transparencia = 50
+            """
             eslabon = EslabonPrincipal(pilas, x=600)
             eslabon.aprender('arrastrable')
             xs = [eslabon]
-            for j in range(0, 49):
+            for j in range(0, 9):
                 xs.append(EslabonSecundario(pilas, 0, 0, xs[j]))
             map(bg, xs)
             pilas.colisiones.agregar(ruedolph, eslabon, seguir_rueda)
+            """
+            pilas.colisiones.agregar(ruedolph, lugar, check)
         ys = map(lambda attr: Pendorcho(pilas, x=attr[0], y=attr[1], centro=attr[2], img=attr[3]), coor_esc_1)
 
         pendorchos = pilas.actores.Grupo()
         map(lambda x: pendorchos.agregar(x), ys)
         map(lambda x: x.aprender('arrastrable'), ys)
 
-        pilas.tareas.agregar(1, general, True, horno, cinta, plancha, laser, base, brazo, garra)
-        pilas.tareas.agregar(32, general, True, horno, cinta, plancha, laser, base, brazo, garra)
+    #    pilas.tareas.agregar(1, general, True, horno, cinta, plancha, laser, base, brazo, garra)
+      #  pilas.tareas.agregar(32, general, True, horno, cinta, plancha, laser, base, brazo, garra)
         # Ruedolph
         if self.pe:
             generico_flag = False
         else:
             generico_flag = True
-        pilas.tareas.agregar(63, general, generico_flag, horno, cinta, plancha, laser, base, brazo, garra)
+      #  pilas.tareas.agregar(63, general, generico_flag, horno, cinta, plancha, laser, base, brazo, garra)
 
-        pilas.tareas.siempre(94, bar)
+      #  pilas.tareas.siempre(94, bar)
         pilas.tareas.condicional(1, ruedolph.movete)
         if self.pe:
             pilas.colisiones.agregar(ruedolph, rodillo, girar)
         pilas.colisiones.agregar(ruedolph, bloque_bronce, agarra_metal_amarillo)
         pilas.colisiones.agregar(ruedolph, ventana, pasar_a_escenario_2)
         pilas.colisiones.agregar(ruedolph, pendorchos, encajar)
-
+        pilas.colisiones.agregar(ruedolph, check_flag, act_check_flag)
         monticulo = pilas.actores.Actor(-640, -271, SMALL_IMG_DIR + 'monticulo-small.png')
 
         return ruedolph
@@ -806,7 +915,7 @@ class Escenario_2(pilasengine.escenas.Escena):
         ventana = pilas.actores.Actor(-826, -36)
         ventana.transparencia = 77
         ventana.figura_de_colision = pilas.fisica.Rectangulo(ventana.x, ventana.y,
-                                                             50, 50, sensor=True, dinamica=False)
+                                                             500, 500, sensor=True, dinamica=False)
         # generamos la cadena si es la primera vez que entra al escenario
         if self.pe:
             eslabon = EslabonPrincipal(pilas)
