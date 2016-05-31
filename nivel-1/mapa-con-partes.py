@@ -21,6 +21,8 @@ SMALL_IMG_DIR = IMG_DIR + 'mapa-chico-separado/'
 #mapa = pilas.fondos.Fondo(imagen=
            #     SMALL_IMG_DIR+"fondo_small.jpg")
 
+
+
 ###################################################
 
 ##################### Actores ######################
@@ -53,29 +55,29 @@ class Ruedolph(pilasengine.actores.Actor):
         pilas.fisica.gravedad_y = -10
         # La camara sigue a Ruedolph
         cam = pilas.escena_actual().camara
+
         if self.garra is not None:
             self.figura.x, self.figura.y = self.garra.extremo
+        if self.x >= 0:
+            if self.x + 1000.0 / (cam.escala) <= 1000:
+                cam.x = self.x
+            else:
+                cam.x = 1000 - 1000.0 / (cam.escala)
         else:
-            if self.x >= 0:
-                if self.x + 1000.0 / (cam.escala) <= 1000:
-                    cam.x = self.x
-                else:
-                    cam.x = 1000 - 1000.0 / (cam.escala)
+            if self.x - 1000.0 / (cam.escala) > -1000:
+                cam.x = self.x
             else:
-                if self.x - 1000.0 / (cam.escala) > -1000:
-                    cam.x = self.x
-                else:
-                    cam.x = -1000 + 1000.0 / (cam.escala)
-            if self.y >= 0:
-                if self.y + 540.0 / (cam.escala) <= 540:
-                    cam.y = self.y
-                else:
-                    cam.y = 540 - 540.0 / (cam.escala)
+                cam.x = -1000 + 1000.0 / (cam.escala)
+        if self.y >= 0:
+            if self.y + 540.0 / (cam.escala) <= 540:
+                cam.y = self.y
             else:
-                if self.y - 540.0 / (cam.escala) > -540:
-                    cam.y = self.y
-                else:
-                    cam.y = -540 + 540.0 / (cam.escala)
+                cam.y = 540 - 540.0 / (cam.escala)
+        else:
+            if self.y - 540.0 / (cam.escala) > -540:
+                cam.y = self.y
+            else:
+                cam.y = -540 + 540.0 / (cam.escala)
 
         self.x = self.figura.x
         self.y = self.figura.y
@@ -240,13 +242,21 @@ class EslabonSecundario(pilasengine.actores.Actor):
         self.sigue = sigue
         self.escala = 0.4
         self.imagen = SMALL_IMG_DIR + '/eslabon.png'
-
+        self.a_cola = True
     def actualizar(self):
-        self.rotacion = self.sigue.rotacion / 2
-        self.x = min(self.sigue.x + 25, 779)
-        if self.y > -400:
-            self.x = self.sigue.x
-        self.y = max(self.sigue.y - 30, -400) - self.sigue.rotacion / 2
+        if self.sigue is not None:
+            self.rotacion = self.sigue.rotacion / 2
+            # la cadena sigue a derecha o izquierda
+            if self.a_cola:
+                self.x = min(self.sigue.x + 35, 779)
+            else:
+                self.x = min(self.sigue.x - 35, 779)
+            if self.y > -400:
+                if self.a_cola:
+                    self.x = self.sigue.x + 10
+                else:
+                    self.x = self.sigue.x - 10
+            self.y = max(self.sigue.y - 30, -400) - self.sigue.rotacion / 2
 pilas.actores.vincular(EslabonPrincipal)
 pilas.actores.vincular(EslabonSecundario)
 pilas.actores.vincular(Pendorcho)
@@ -378,8 +388,8 @@ def girar(rueda, rodillo):
         pilas.control.boton = True
         rueda.figura.x = rodillo.x
         rueda.figura.y = rodillo.y 
-        pilas.utils.interpolar(rueda, 'rotacion', -520, 2,'lineal')
-        pilas.utils.interpolar(rodillo, 'rotacion', -520, 2,'lineal')
+        pilas.utils.interpolar(rueda, 'rotacion', -720, 2.5,'lineal')
+        pilas.utils.interpolar(rodillo, 'rotacion', -720, 2.5,'lineal')
         rodillo.estamina_cinta_rota = 155
 #        pilas.tareas.agregar(0, mueve_x, bloque, 3, 0.5)
         pilas.tareas.agregar(0.0, aux_mueve_x_y, rodillo.bloque, -456.5, -167, 1)
@@ -392,6 +402,36 @@ def girar(rueda, rodillo):
 #        cinta.imagen(avanzar)
 
 
+# encajar cadena en rodillo y girar rodillo para abrir la puerta
+def girar_para_abrir(rueda, rodillo):
+    if pilas.control.boton:
+        pilas.control.boton = True
+        rueda.figura.x = rodillo.x
+        rueda.figura.y = rodillo.y 
+        pilas.utils.interpolar(rueda, 'rotacion', -520, 2.5,'lineal')
+        pilas.utils.interpolar(rodillo, 'rotacion', -520, 2.5,'lineal')
+
+        pilas.tareas.condicional(0.5, mifun)
+
+        puerta = get_elem('puerta')[0]
+        pilas.tareas.condicional(1, cambiar_puerta, puerta, 1)
+        pilas.tareas.condicional(1.5, cambiar_puerta, puerta, 2)
+
+def fijar_cadena_rodillo():
+    r = get_ruedolph()
+    r.imantado = 0
+    eslabon = filter(lambda x: isinstance(x, EslabonPrincipal), pilas.actores.listar_actores())[0]
+    eslabon.sigue = None
+
+def fijar_cadena_timon():
+    timon = get_elem('timon')[0]
+    eslabon = EslabonPrincipal(pilas, x=timon.x, y=timon.y)
+    eslabon.aprender('arrastrable')
+    xs = [eslabon]
+    for j in range(0, 2):
+        e = EslabonSecundario(pilas, 0, 0, xs[j])
+        e.a_cola = False
+        xs.append(e)
 
 def aux_mueve_x(b, x, t):
     pilas.utils.interpolar(b, 'x', x,t,'lineal')
@@ -407,6 +447,16 @@ def cambiar_img(b):
 def opa(e, c):
     e.transparencia_min = c
 
+def cambiar_puerta(p, n):
+    # la puerta empieza cerrada (fase 0)
+    # entreabierta: fase 1
+    # abierta: fase 2
+    if n == 1:
+        p.imagen = SMALL_IMG_DIR + 'puerta-entreabierta.png'
+    if n == 2:
+        p.imagen = SMALL_IMG_DIR + 'puerta-abierta.png'
+    p.z = -1
+    return False
 
 def generar_emisor(const, horno):
     emisor = pilas.actores.Emisor(horno.x, horno.y + 100)
@@ -731,7 +781,7 @@ def get_elem(tipo):
 
 # poner personaje en background
 def bg(elem):
-    elem.z = 2
+    elem.z = 0
 
 
 class Escenario_1(pilasengine.escenas.Escena):
@@ -779,8 +829,20 @@ class Escenario_1(pilasengine.escenas.Escena):
         cinta.z = 2
         cinta.imagen = grilla_cinta
 
-
-
+        grilla_timon = pilas.imagenes.cargar_grilla(SMALL_IMG_DIR + 'timon-grilla-SMALL.png', 46)
+        timon = pilas.actores.Elementos(x=812, y=-320, es='timon')
+        timon.imagen = grilla_timon
+        timon.centro = (100, 100)
+        timon.x, timon.y = 812, -320
+#        timon.aprender('arrastrable')
+        timon.z = 3
+        
+        puerta = Elementos(pilas, 773, -334, es='puerta')
+        puerta.imagen = SMALL_IMG_DIR + 'puerta-cerrada.png'
+        puerta.z = 4
+        
+        
+        
         if self.pe:
             bloque_bronce = Elementos(pilas, x=-519, y=-40, es='bloque-bronce-sano')
             bloque_bronce.imagen = SMALL_IMG_DIR + 'bronce.png'
@@ -789,7 +851,6 @@ class Escenario_1(pilasengine.escenas.Escena):
             bloque_bronce = Elementos(pilas, x=-266, y=-374, es='bloque-bronce-roto')
             bloque_bronce.imagen = SMALL_IMG_DIR + 'bronce-roto.png'
             bloque_bronce.z = 3
-
         bloque_bronce.escala = 0.7
         bloque_bronce.radio_de_colision = 60
         bloque_bronce.rotacion = 10
@@ -805,7 +866,7 @@ class Escenario_1(pilasengine.escenas.Escena):
         cinta_rota.z = 5
         cinta_rota.aprender('arrastrable')
         cinta_rota.imagen = grilla_cinta_rota
-
+        # rodillo de la cinta rota
         rodillo = Pendorcho(pilas, -454, -290.8, SMALL_IMG_DIR + 'rodillo-3.png', (0,0),cinta_rota)
         rodillo.z = 1
         rodillo.bloque = bloque_bronce
@@ -838,41 +899,54 @@ class Escenario_1(pilasengine.escenas.Escena):
                                                 alto=230, restitucion=0, friccion=0, amortiguacion=0, plataforma=1)
 
         ruedolph = Ruedolph(pilas)
+        ruedolph.z = -1
         # no es la primera vez que esta en este escenario
         if not self.pe:
+            c = pilas.escena_actual().camara
+            c.escala = 1
             ruedolph.figura.x = 600
             ruedolph.figura.y = -389
             ruedolph.imagen = SMALL_IMG_DIR + 'ruedolph_fase_2.png'
             ruedolph.imantate()
             ruedolph.fase = 3
+            ruedolph.z = -1
             # lugar donde ruedolph se va a posicionar para ser escaneado
             lugar = pilas.actores.ActorInvisible(189, 284)
             lugar.radio_de_colision = 10
             lugar.transparencia = 50
-            """
+            
             eslabon = EslabonPrincipal(pilas, x=600)
             eslabon.aprender('arrastrable')
+            cadena = pilas.actores.Grupo()
+            cadena.agregar(eslabon)
             xs = [eslabon]
-            for j in range(0, 9):
-                xs.append(EslabonSecundario(pilas, 0, 0, xs[j]))
-            map(bg, xs)
+            for j in range(0, 39):
+                e = EslabonSecundario(pilas, 0, 0, xs[j])
+                e.aprender('arrastrable')
+                cadena.agregar(e)
+                xs.append(e)
+      #      map(bg, xs)
             pilas.colisiones.agregar(ruedolph, eslabon, seguir_rueda)
-            """
+            
             pilas.colisiones.agregar(ruedolph, lugar, check)
+            pilas.colisiones.agregar(ruedolph, rodillo, girar_para_abrir)
+            pilas.colisiones.agregar(eslabon, rodillo, fijar_cadena_rodillo)
+            pilas.colisiones.agregar(eslabon, timon, fijar_cadena_timon)
+
         ys = map(lambda attr: Pendorcho(pilas, x=attr[0], y=attr[1], centro=attr[2], img=attr[3]), coor_esc_1)
 
         pendorchos = pilas.actores.Grupo()
         map(lambda x: pendorchos.agregar(x), ys)
         map(lambda x: x.aprender('arrastrable'), ys)
 
-    #    pilas.tareas.agregar(1, general, True, horno, cinta, plancha, laser, base, brazo, garra)
-      #  pilas.tareas.agregar(32, general, True, horno, cinta, plancha, laser, base, brazo, garra)
+       # pilas.tareas.agregar(1, general, True, horno, cinta, plancha, laser, base, brazo, garra)
+       # pilas.tareas.agregar(32, general, True, horno, cinta, plancha, laser, base, brazo, garra)
         # Ruedolph
         if self.pe:
             generico_flag = False
         else:
             generico_flag = True
-      #  pilas.tareas.agregar(63, general, generico_flag, horno, cinta, plancha, laser, base, brazo, garra)
+       # pilas.tareas.agregar(63, general, generico_flag, horno, cinta, plancha, laser, base, brazo, garra)
 
       #  pilas.tareas.siempre(94, bar)
         pilas.tareas.condicional(1, ruedolph.movete)
@@ -883,19 +957,19 @@ class Escenario_1(pilasengine.escenas.Escena):
         pilas.colisiones.agregar(ruedolph, pendorchos, encajar)
         pilas.colisiones.agregar(ruedolph, check_flag, act_check_flag)
         monticulo = pilas.actores.Actor(-640, -271, SMALL_IMG_DIR + 'monticulo-small.png')
-
+        monticulo.z = -2
         return ruedolph
 
 
 class Escenario_2(pilasengine.escenas.Escena):
     def iniciar(self, pe=True):
-        self.fondo = pilas.fondos.Fondo(imagen=SMALL_IMG_DIR + "escenario_2_small.png")
+        self.fondo = pilas.fondos.Fondo(imagen=SMALL_IMG_DIR + "fondo_escenario_2_small.jpg")
         self.pe = pe
 
     def cambiar_a_escenario_2(self):
         ruedolph = Ruedolph(pilas)
         ruedolph.movete()
-        ruedolph.z = 1
+        ruedolph.z = 0
         # generamos los pendorchos, coor_esc_2 es una lista
         # donde cada elementos es (x, y, (centro_x, centro_y), ruta_de_la_imagen)
         colgables = map(lambda attr: Pendorcho(pilas, x=attr[0], y=attr[1], centro=attr[2], img=attr[3]), coor_esc_2)
@@ -938,4 +1012,16 @@ pilas.escenas.vincular(Escenario_2)
 e1 = pilas.escenas.Escenario_1(True)
 ruedolph = e1.cambiar_a_escenario_1()
 pilas.eventos.pulsa_tecla.conectar(verificar)
+
+def mifun():
+    ys = filter(lambda x: isinstance(x, EslabonSecundario), pilas.actores.listar_actores())
+    for elem in ys:
+        elem.sigue = None
+    xs = map(lambda elem: (elem.x, elem), ys)
+    xs.sort(key=lambda x:-x[0])    
+    for i in range(len(xs)):
+        x = xs[i][1]
+        aux = i*0.73
+        x.y = [-320 + aux],1.6
+    return False
 pilas.ejecutar()
