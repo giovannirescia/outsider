@@ -111,7 +111,7 @@ class Escanear(pilasengine.comportamientos.Comportamiento):
 
 class ApareceTexto(pilasengine.comportamientos.Comportamiento):
     def iniciar(self, receptor):
-        receptor.transparencia = 0
+        receptor.transparencia = 30
     def actualizar(self):
         return True        
 
