@@ -40,6 +40,9 @@ class Mueve_x(pilasengine.comportamientos.Comportamiento):
             self.receptor.x += 2
             self.stamina -= 2
             self.cinta.imagen.avanzar(6)
+            rg = self.cinta.rodillos
+            for r in rg:
+                r.rotacion -= 5
         else:
              return True
 
@@ -60,6 +63,10 @@ class Mueve_x_y(pilasengine.comportamientos.Comportamiento):
                 self.receptor.y += velocidad
                 self.stamina_y -= velocidad
             self.cinta.imagen.avanzar(6)
+            rg = self.cinta.rodillos
+            for r in rg:
+                r.rotacion -= 5
+
         else:
              return True
 
@@ -111,7 +118,7 @@ class Escanear(pilasengine.comportamientos.Comportamiento):
 
 class ApareceTexto(pilasengine.comportamientos.Comportamiento):
     def iniciar(self, receptor):
-        receptor.transparencia = 30
+        receptor.transparencia = 10
     def actualizar(self):
         return True        
 
