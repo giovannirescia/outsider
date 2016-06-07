@@ -263,11 +263,13 @@ class Pendorcho(pilasengine.actores.Actor):
                                             restitucion=0, amortiguacion=0)
         self.estamina_cinta_rota = 0
         self.rodillos = None
-
+        self.timon = None
     def actualizar(self):
         if self.cinta_rota is not None:
             if self.estamina_cinta_rota:
                 self.cinta_rota.imagen.avanzar(5)
+                if self.timon is not None:
+                    self.timon.imagen.avanzar(25)
                 self.estamina_cinta_rota -= 1
                 r_xs = self.rodillos
                 for rodillo in r_xs:
@@ -466,10 +468,15 @@ def girar_para_abrir(rueda, rodillo):
         pilas.control.boton = True
         rueda.figura.x = rodillo.x
         rueda.figura.y = rodillo.y
-        pilas.utils.interpolar(rueda, 'rotacion', -520, 2.5, 'lineal')
-        pilas.utils.interpolar(rodillo, 'rotacion', -520, 2.5, 'lineal')
+        t = get_elem('timon')[0]
+        pilas.utils.interpolar(rueda, 'rotacion', -500, 2, 'lineal')
+        pilas.utils.interpolar(rodillo, 'rotacion', -500, 2, 'lineal')
+        rodillo.timon = t
+        # tambien funciona para el timon
+        rodillo.estamina_cinta_rota = 124
+
         for rod in rodillo.rodillos:
-            pilas.utils.interpolar(rod, 'rotacion', -520, 2.5, 'lineal')
+            pilas.utils.interpolar(rod, 'rotacion', -500, 2, 'lineal')
 
         pilas.tareas.condicional(0.5, mifun)
         rueda.seguido_por_camara = False
@@ -1239,11 +1246,11 @@ class Escenario_2(pilasengine.escenas.Escena):
 
 pilas.escenas.vincular(Escenario_1)
 pilas.escenas.vincular(Escenario_2)
-e1 = pilas.escenas.Escenario_1(True)
+#e1 = pilas.escenas.Escenario_1(True)
 # desde el escenario 2, con los materiales (fase 2) y sin la cadena
 #e1 = pilas.escenas.Escenario_1(False, 2, False)
 # desde el escenario 2, con los materiales (fase 3) y la cadena
-#e1 = pilas.escenas.Escenario_1(False, 3, tc=True)
+e1 = pilas.escenas.Escenario_1(False, 3, tc=True)
 # desd el escenario 2, con el material rojo, sin la cadena
 #e1 = pilas.escenas.Escenario_1(False, 1, tc=False)
 ruedolf = e1.cambiar_a_escenario_1()
