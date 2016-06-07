@@ -47,37 +47,43 @@ class Ruedolf(pilasengine.actores.Actor):
         self.salto = 120
         self.fase = 0
         self.tiene_cadena = False
+        self.camara = False
+        self.seguido_por_camara = False
+        c = pilas.escena_actual().camara
+        c.escala = [1], 1
+        c.x = 0
+        c.y = 0
 
     def actualizar(self):
         velocidad = 10
         salto = self.salto
-#        pilas.eventos.pulsa_tecla.conectar(verificar)
         pilas.fisica.gravedad_y = -10
         # La camara sigue a Ruedolf
         cam = pilas.escena_actual().camara
-
         if self.garra is not None:
             self.figura.x, self.figura.y = self.garra.extremo
-        if self.x >= 0:
-            if self.x + 1000.0 / (cam.escala) <= 1000:
-                cam.x = self.x
-            else:
-                cam.x = 1000 - 1000.0 / (cam.escala)
-        else:
-            if self.x - 1000.0 / (cam.escala) > -1000:
-                cam.x = self.x
-            else:
-                cam.x = -1000 + 1000.0 / (cam.escala)
-        if self.y >= 0:
-            if self.y + 540.0 / (cam.escala) <= 540:
-                cam.y = self.y
-            else:
-                cam.y = 540 - 540.0 / (cam.escala)
-        else:
-            if self.y - 540.0 / (cam.escala) > -540:
-                cam.y = self.y
-            else:
-                cam.y = -540 + 540.0 / (cam.escala)
+        if self.seguido_por_camara:
+            if self.se_puede_mover:
+                if self.x >= 0:
+                    if self.x + 1000.0 / (cam.escala) <= 1000:
+                        cam.x = self.x
+                    else:
+                        cam.x = 1000 - 1000.0 / (cam.escala)
+                else:
+                    if self.x - 1000.0 / (cam.escala) > -1000:
+                        cam.x = self.x
+                    else:
+                        cam.x = -1000 + 1000.0 / (cam.escala)
+                if self.y >= 0:
+                    if self.y + 540.0 / (cam.escala) <= 540:
+                        cam.y = self.y
+                    else:
+                        cam.y = 540 - 540.0 / (cam.escala)
+                else:
+                    if self.y - 540.0 / (cam.escala) > -540:
+                        cam.y = self.y
+                    else:
+                        cam.y = -540 + 540.0 / (cam.escala)
 
         self.x = self.figura.x
         self.y = self.figura.y
@@ -85,10 +91,16 @@ class Ruedolf(pilasengine.actores.Actor):
         self.figura_encaje.y = self.y
 
         if self.pilas.control.derecha and self.se_puede_mover:
+            if self.seguido_por_camara:
+
+                self.activar_camara()
             self.figura.velocidad_x = velocidad
             self.rotacion -= velocidad
 
         elif self.pilas.control.izquierda and self.se_puede_mover:
+            if self.seguido_por_camara:
+                self.activar_camara()
+
             self.figura.velocidad_x = -velocidad
             self.rotacion += velocidad
 
@@ -110,6 +122,14 @@ class Ruedolf(pilasengine.actores.Actor):
         self.sensor_pies.x = self.x
         self.sensor_pies.y = self.y - 53
 
+    def activar_camara(self, val=2, seguir=True):
+        c = pilas.escena_actual().camara
+        self.seguido_por_camara = seguir
+        if val == 1:
+            c.x = [0], 0.5
+            c.y = [0], 0.5
+        c.escala = [val], 0.5
+
     def esta_pisando_el_suelo(self):
         return any(isinstance(x, pilasengine.fisica.rectangulo.Rectangulo) for x in self.sensor_pies.figuras_en_contacto)
 
@@ -123,6 +143,12 @@ class Ruedolf(pilasengine.actores.Actor):
     def poner_garra(self, g):
         self.garra = g
 
+    def restore_zoom(self):
+        c = pilas.escena_actual().camara
+        c.escala = [1], 1
+        c.x = [0], 1
+        c.y = [0], 1
+
 
 class Elementos(pilasengine.actores.Actor):
     def iniciar(self, x=0, y=0, es=''):
@@ -133,15 +159,40 @@ class Elementos(pilasengine.actores.Actor):
 
 
 class RuedaGenerica(pilasengine.actores.Actor):
-    def iniciar(self, x, y, param):
+    def iniciar(self, x, y, param, cam_lo_sigue):
         self.x = x
         self.y = y
         self.garra = None
         self.imagen = param
+        self.cam_lo_sigue = cam_lo_sigue
 
     def actualizar(self):
         if self.garra is not None:
             self.x, self.y = self.garra.extremo
+        if self.cam_lo_sigue:
+            cam = pilas.escena_actual().camara
+            cam.escala = [2], 2
+
+            if self.x >= 0:
+                if self.x + 1000.0 / (cam.escala) <= 1000:
+                    cam.x = [self.x], 0.5
+                else:
+                    cam.x = [1000 - 1000.0 / (cam.escala)], 0.5
+            else:
+                if self.x - 1000.0 / (cam.escala) > -1000:
+                    cam.x = [self.x], 0.5
+                else:
+                    cam.x = [-1000 + 1000.0 / (cam.escala)], 0.5
+            if self.y >= 0:
+                if self.y + 540.0 / (cam.escala) <= 540:
+                    cam.y = [self.y], 0.5
+                else:
+                    cam.y = [540 - 540.0 / (cam.escala)], 0.5
+            else:
+                if self.y - 540.0 / (cam.escala) > -540:
+                    cam.y = [self.y], 0.5
+                else:
+                    cam.y = [-540 + 540.0 / (cam.escala)], 0.5
 
     def poner_garra(self, g):
         self.garra = g
@@ -275,7 +326,6 @@ pilas.actores.vincular(Garra)
 pilas.actores.vincular(Base)
 pilas.actores.vincular(RuedaGenerica)
 
-
 #######################################################
 
 ################## Funciones Auxiliares ###############
@@ -284,23 +334,22 @@ pilas.actores.vincular(RuedaGenerica)
 
 # Generamos un rueda generica: dos al comienzo, despues
 # viene ruedolf y despues generamos sin parar
-def generar_rueda(test_p=IMG_DIR + '/mapa-chico-separado/bloque_generico.png'):
-    rueda = RuedaGenerica(pilas=pilas, x=-800, y=430, param=test_p)
+
+
+def generar_rueda(test_p=IMG_DIR + '/mapa-chico-separado/bloque_generico.png', cam_lo_sigue=False):
+    rueda = RuedaGenerica(pilas=pilas, x=-800, y=430, param=test_p, cam_lo_sigue=cam_lo_sigue)
     rueda.z = 1
     return rueda
 
 
-def generar_ruedolf():
-    rueda = RuedaGenerica(pilas, -800, 430, param=SMALL_IMG_DIR + 'bloque_perso_solido.png')
+def restore_zoom():
+    pass
+
+
+def generar_ruedolf(cam_lo_sigue=False):
+    rueda = RuedaGenerica(pilas, -800, 430, param=SMALL_IMG_DIR + 'bloque_perso_solido.png', cam_lo_sigue=cam_lo_sigue)
     rueda.z = 1
     return rueda
-
-
-def genesis():
-    global R
-    R = Ruedolf(pilas)
-    R.z = 1
-    return R
 
 
 # Vinculamos la garra a la rueda
@@ -371,6 +420,7 @@ def mueve_cinta():
 
 def generar_emisor_caida(x, y):
     emisor = pilas.actores.Emisor(x, y)
+    emisor.z = -7
     emisor.imagen_particula = pilas.imagenes.cargar_grilla("humo2.png")
     emisor.constante = True
     emisor.transparencia_min = 100
@@ -412,6 +462,7 @@ def girar(rueda, rodillo):
 # encajar cadena en rodillo y girar rodillo para abrir la puerta
 def girar_para_abrir(rueda, rodillo):
     if pilas.control.boton:
+        rueda = get_ruedolf()
         pilas.control.boton = True
         rueda.figura.x = rodillo.x
         rueda.figura.y = rodillo.y
@@ -421,6 +472,9 @@ def girar_para_abrir(rueda, rodillo):
             pilas.utils.interpolar(rod, 'rotacion', -520, 2.5, 'lineal')
 
         pilas.tareas.condicional(0.5, mifun)
+        rueda.seguido_por_camara = False
+        pilas.tareas.una_vez(0, rueda.activar_camara, 1, False)
+        pilas.tareas.una_vez(5, rueda.activar_camara, 2, True)
 
         puerta = get_elem('puerta')[0]
         pilas.tareas.condicional(1, cambiar_puerta, puerta, 1)
@@ -480,6 +534,7 @@ def cambiar_puerta(p, n):
     if n == 2:
         p.imagen = SMALL_IMG_DIR + 'puerta-abierta.png'
         puerta = pilas.actores.ActorInvisible(850, p.y)
+        puerta.transparencia = 100
         puerta.figura_de_colision = pilas.fisica.Rectangulo(x=puerta.x, y=p.y, alto=200, ancho=50, sensor=True, dinamica=False)
         pilas.colisiones.agregar(r, puerta, puerta_nivel)
     p.z = -1
@@ -509,6 +564,7 @@ def get_ruedolf():
             return x
 
 
+# piezas empiezan con rotacion random
 def randrot(xs):
     for x in xs:
         x.rotacion = randint(0, 359)
@@ -619,7 +675,7 @@ def check():
     brazo = filter(lambda x: isinstance(x, Brazo), act_xs)[0]
     garra = filter(lambda x: isinstance(x, Garra), act_xs)[0]
     stats = crear_stats(n)
-    ruedolf.se_puede_mover = False
+    ruedolf.se_puede_mover = True
 #    pilas.tareas.eliminar_todas()
     if chequear:
         t1 = pilas.tareas.agregar(1, laser_fade_in, laser)
@@ -678,6 +734,7 @@ def check():
 
             pilas.tareas.agregar(14, ruedolf.movete)
             chequear = False
+        # Aceptamos a Ruedolf
         elif ruedolf.fase == 1:
             substats = crear_stats(200)
             # garra agarra ruedolf y lo desecha
@@ -703,16 +760,25 @@ def check():
             # La garra se mueve hacia arriba
             pilas.tareas.agregar(8.4, gira, garra, 200)
             # Eliminamos la rueda y el texto
-            pilas.tareas.agregar(10.8, eliminar, [ruedolf, stats, substats])
+            pilas.tareas.agregar(9, eliminar, [ruedolf])
+            pilas.tareas.agregar(10.8, eliminar, [stats, substats])
             # La garra vuelve a su posicion original
             pilas.tareas.agregar(12.4, gira, garra, -200 + 55)
             # El brazo vuelve a su posicion original
             pilas.tareas.agregar(12.7, gira, brazo, -150 + 70)
+            pilas.tareas.una_vez(14, restore_zoom)
 
 
 def borrate(elem):
     elem.eliminar()
     return False
+
+
+def restore_zoom():
+    c = pilas.escena_actual().camara
+    c.escala = [1]
+    c.x = [0], 1
+    c.y = [0], 1
 
 
 def pasar_a_escenario_2():
@@ -745,12 +811,12 @@ pilas.comportamientos.vincular(ApareceTexto)
 
 # Accion general que va a crear bloques de metal, derrertirlos
 # y crear una rueda dentada a partir de un molde
-def general(generico, horno, cinta, plancha, laser, base, brazo, garra):
+def general(generico, horno, cinta, plancha, laser, base, brazo, garra, cam_seguir_rueda):
     # Generamos la rueda generica
     if generico:
-        rg = generar_rueda()
+        rg = generar_rueda(cam_lo_sigue=cam_seguir_rueda)
     else:
-        rg = generar_ruedolf()
+        rg = generar_ruedolf(cam_lo_sigue=cam_seguir_rueda)
     # El texto (por ahora) de la pantalla que
     # se va a inicializar totalmente transparente
     if generico:
@@ -833,6 +899,7 @@ def general(generico, horno, cinta, plancha, laser, base, brazo, garra):
 
 
 def bar():
+    r = get_ruedolf()
     generico = True
     act_xs = pilas.actores.listar_actores()
     elementos_xs = filter(lambda x: isinstance(x, Elementos), act_xs)
@@ -844,9 +911,9 @@ def bar():
     base = filter(lambda x: isinstance(x, Base), act_xs)[0]
     brazo = filter(lambda x: isinstance(x, Brazo), act_xs)[0]
     garra = filter(lambda x: isinstance(x, Garra), act_xs)[0]
-    pilas.tareas.agregar(1, general, generico, horno, cinta, plancha, laser, base, brazo, garra)
-    pilas.tareas.agregar(32, general, generico, horno, cinta, plancha, laser, base, brazo, garra)
-    pilas.tareas.agregar(63, general, generico, horno, cinta, plancha, laser, base, brazo, garra)
+    pilas.tareas.agregar(1, general, generico, horno, cinta, plancha, laser, base, brazo, garra, False)
+    pilas.tareas.agregar(32, general, generico, horno, cinta, plancha, laser, base, brazo, garra, False)
+    pilas.tareas.agregar(63, general, generico, horno, cinta, plancha, laser, base, brazo, garra, False)
 
 
 def eliminar_t(test_t):
@@ -909,10 +976,10 @@ class Escenario_1(pilasengine.escenas.Escena):
         scanner = Elementos(pilas, 315, 450, es='escaner')
         scanner.imagen = SMALL_IMG_DIR + 'scanner.png'
 
-        laser = Elementos(pilas, 70, 145, es='laser')
-        laser.imagen = SMALL_IMG_DIR + 'laser2.png'
+        laser = Elementos(pilas, 128, 257, es='laser')
+        laser.imagen = SMALL_IMG_DIR + 'laser.png'
         laser.transparencia = 100
-        laser.z = -1
+        laser.z = -6
         pantalla = Elementos(pilas, 450, 350, es='pantalla')
         pantalla.imagen = SMALL_IMG_DIR + 'tele_prendido.png'
 
@@ -948,8 +1015,12 @@ class Escenario_1(pilasengine.escenas.Escena):
         puerta.z = 4
 
         puerta.aprender('arrastrable')
+        ruedolf = Ruedolf(pilas)
+        ruedolf.seguido_por_camara = True
+        ruedolf.z = -1
 
         if self.pe:
+            pilas.tareas.una_vez(97, ruedolf.restore_zoom)
             bloque_bronce = Elementos(pilas, x=-519, y=-40, es='bloque-bronce-sano')
             bloque_bronce.imagen = SMALL_IMG_DIR + 'bronce.png'
             bloque_bronce.z = 3
@@ -957,6 +1028,7 @@ class Escenario_1(pilasengine.escenas.Escena):
             bloque_bronce = Elementos(pilas, x=-266, y=-374, es='bloque-bronce-roto')
             bloque_bronce.imagen = SMALL_IMG_DIR + 'bronce-roto.png'
             bloque_bronce.z = 3
+
         bloque_bronce.escala = 0.7
         bloque_bronce.radio_de_colision = 60
         bloque_bronce.rotacion = 10
@@ -996,7 +1068,7 @@ class Escenario_1(pilasengine.escenas.Escena):
                                         alto=1080, restitucion=0, friccion=0, amortiguacion=0, plataforma=1)
         # ventana
         ventana = pilas.actores.ActorInvisible(x=830, y=-40)
-        ventana.transparencia = 50
+        ventana.transparencia = 100
         ventana.figura_de_colision = pilas.fisica.Rectangulo(830, -40, 55, 55, sensor=True, dinamica=False)
         plataforma_piso = pilas.fisica.Rectangulo(x=200, y=210, alto=20,
                                                   ancho=150, restitucion=0, friccion=0, amortiguacion=0, plataforma=1)
@@ -1004,18 +1076,20 @@ class Escenario_1(pilasengine.escenas.Escena):
         pantalla_caja = pilas.fisica.Rectangulo(x=450, y=300, ancho=275,
                                                 alto=230, restitucion=0, friccion=0, amortiguacion=0, plataforma=1)
 
-        ruedolf = Ruedolf(pilas)
-        ruedolf.z = -1
         # no es la primera vez que esta en este escenario
         if not self.pe:
-            ruedolf.figura.x = 600
-            ruedolf.figura.y = -389
+            ruedolf.figura.x = 650
+            if self.tc or self.f > 1:
+                #ruedolf = get_ruedolf()
+                ruedolf.figura.y = -36
+            else:
+                ruedolf.figura.y = -389
             ruedolf.imantate()
             ruedolf.z = -1
             # lugar donde ruedolf se va a posicionar para ser escaneado
             lugar = pilas.actores.ActorInvisible(189, 284)
             lugar.radio_de_colision = 10
-            lugar.transparencia = 50
+            lugar.transparencia = 100
 
             if self.f == 2:
                 ruedolf.imagen = SMALL_IMG_DIR + 'ruedolf-fase-2.png'
@@ -1025,7 +1099,7 @@ class Escenario_1(pilasengine.escenas.Escena):
                 ruedolf.fase = 3
                 ruedolf.imantate()
                 if self.tc:
-                    eslabon = EslabonPrincipal(pilas, x=600)
+                    eslabon = EslabonPrincipal(pilas, x=650, y=-36)
                     eslabon.aprender('arrastrable')
                     cadena = pilas.actores.Grupo()
                     cadena.agregar(eslabon)
@@ -1056,18 +1130,25 @@ class Escenario_1(pilasengine.escenas.Escena):
         pendorchos = pilas.actores.Grupo()
         map(lambda x: pendorchos.agregar(x), ys)
         map(lambda x: x.aprender('arrastrable'), ys)
+        if self.pe:
+            aux_flag_cam = True
+        else:
+            aux_flag_cam = False
+        pilas.tareas.agregar(1, general, True, horno, cinta, plancha, laser, base, brazo, garra, aux_flag_cam)
+        pilas.tareas.agregar(32, general, True, horno, cinta, plancha, laser, base, brazo, garra, aux_flag_cam)
 
-        pilas.tareas.agregar(1, general, True, horno, cinta, plancha, laser, base, brazo, garra)
-        pilas.tareas.agregar(32, general, True, horno, cinta, plancha, laser, base, brazo, garra)
         # Ruedolf
         if self.pe:
             generico_flag = False
         else:
             generico_flag = True
-        pilas.tareas.agregar(63, general, generico_flag, horno, cinta, plancha, laser, base, brazo, garra)
+        pilas.tareas.agregar(63, general, generico_flag, horno, cinta, plancha, laser, base, brazo, garra, aux_flag_cam)
 
         pilas.tareas.siempre(94, bar)
-        pilas.tareas.condicional(1, ruedolf.movete)
+        if self.pe:
+            pilas.tareas.condicional(100, ruedolf.movete)
+        else:
+            pilas.tareas.condicional(1, ruedolf.movete)
         if self.pe:
             pilas.colisiones.agregar(ruedolf, rodillo, girar)
         pilas.colisiones.agregar(ruedolf, bloque_bronce, agarra_metal_amarillo)
@@ -1097,22 +1178,35 @@ class Escenario_2(pilasengine.escenas.Escena):
             ruedolf.figura.x = -700
             # puerta de vuelta
             puerta_de_vuelta = pilas.actores.Actor(-850, -330)
+            puerta_de_vuelta.transparencia = 100
             puerta_de_vuelta.figura_de_colision = pilas.fisica.Rectangulo(x=-950, y=-330, alto=200, ancho=60, sensor=True, dinamica=False)
             pilas.colisiones.agregar(ruedolf, puerta_de_vuelta, vuelta_final)
         ruedolf.movete()
+        ruedolf.seguido_por_camara = True
         if self.vdv:
             pc = pilas.actores.Actor(-821, -336, SMALL_IMG_DIR + 'puerta-cerrada-e2.png')
             pc.z = 3
+            ruedolf.figura.y = -36
+            ruedolf.figura.x = -650
         # generamos los pendorchos, coor_esc_2 es una lista
         # donde cada elementos es (x, y, (centro_x, centro_y), ruta_de_la_imagen)
         colgables = map(lambda attr: Pendorcho(pilas, x=attr[0], y=attr[1], centro=attr[2], img=attr[3]), coor_esc_2)
         iman = pilas.actores.Actor(x=550, y=-280)
         iman.transparencia = 100
         iman.radio_de_colision = 100
-        piso_escenario_2 = pilas.fisica.Rectangulo(y=-450, ancho=2000,
+        piso_escenario_2 = pilas.fisica.Rectangulo(x=-200, y=-450, ancho=1300,
                                                    restitucion=0, friccion=0, amortiguacion=0, plataforma=1)
         pared_escenario_2 = pilas.fisica.Rectangulo(x=-870, y=0, ancho=20,
                                                     alto=1080, restitucion=0, friccion=0, amortiguacion=0, plataforma=1)
+
+        # piso bajada antes del iman y pared del iman
+        pb1 = pilas.fisica.Rectangulo(x=450, y=-465, restitucion=0, friccion=0, amortiguacion=0, plataforma=1)
+        pb2 = pilas.fisica.Rectangulo(x=485, y=-470, restitucion=0, friccion=0, amortiguacion=0, plataforma=1)
+        pb3 = pilas.fisica.Rectangulo(x=540, y=-460, restitucion=0, friccion=0, amortiguacion=0, plataforma=1)
+        pb4 = pilas.fisica.Rectangulo(x=560, y=-450, restitucion=0, friccion=0, amortiguacion=0, plataforma=1)
+        # pared
+        pb5 = pilas.fisica.Rectangulo(x=621, y=-430, alto=400, restitucion=0, friccion=0, amortiguacion=0, plataforma=1)
+
         metal_rojo = pilas.actores.Actor(x=240, y=421)
         metal_rojo.radio_de_colision = 30
         metal_rojo.imagen = SMALL_IMG_DIR + 'rojas.png'
@@ -1120,7 +1214,7 @@ class Escenario_2(pilasengine.escenas.Escena):
         metal_azul.radio_de_colision = 30
         metal_azul.imagen = SMALL_IMG_DIR + 'azules.png'
         ventana = pilas.actores.Actor(-826, -36)
-        ventana.transparencia = 77
+        ventana.transparencia = 100
         ventana.figura_de_colision = pilas.fisica.Rectangulo(ventana.x, ventana.y,
                                                              55, 55, sensor=True, dinamica=False)
        # generamos la cadena si es la primera vez que entra al escenario (o si es la segunda por la ventana)
@@ -1145,8 +1239,13 @@ class Escenario_2(pilasengine.escenas.Escena):
 
 pilas.escenas.vincular(Escenario_1)
 pilas.escenas.vincular(Escenario_2)
-
 e1 = pilas.escenas.Escenario_1(True)
+# desde el escenario 2, con los materiales (fase 2) y sin la cadena
+#e1 = pilas.escenas.Escenario_1(False, 2, False)
+# desde el escenario 2, con los materiales (fase 3) y la cadena
+#e1 = pilas.escenas.Escenario_1(False, 3, tc=True)
+# desd el escenario 2, con el material rojo, sin la cadena
+#e1 = pilas.escenas.Escenario_1(False, 1, tc=False)
 ruedolf = e1.cambiar_a_escenario_1()
 pilas.eventos.pulsa_tecla.conectar(verificar)
 
